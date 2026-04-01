@@ -1,76 +1,50 @@
+// 📊 Chart
 const ctx = document.getElementById('crowdChart');
 
 let labels = [];
-let dataPoints = [];
-let systemRunning = true;
+let data = [];
 
-// Chart
 const chart = new Chart(ctx, {
     type: 'line',
     data: {
         labels: labels,
         datasets: [{
             label: 'People Count',
-            data: dataPoints,
+            data: data,
             borderColor: 'red',
             backgroundColor: 'rgba(255,0,0,0.2)',
             tension: 0.4
         }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: { beginAtZero: true }
+        }
     }
 });
 
+// 📈 Graph update
 function updateGraph(count){
     let time = new Date().toLocaleTimeString();
-
     labels.push(time);
-    dataPoints.push(count);
+    data.push(count);
 
     if(labels.length > 15){
         labels.shift();
-        dataPoints.shift();
+        data.shift();
     }
 
     chart.update();
 }
 
-// Camera
-const video = document.getElementById("video");
-const canvas = document.getElementById("canvas");
+// 📡 Fetch count
+async function updateData(){
+    try {
+        let response = await fetch("/count");
+        let dataRes = await response.json();
 
-navigator.mediaDevices.getUserMedia({ video: true })
-.then(stream => video.srcObject = stream)
-.catch(() => alert("Camera permission denied"));
-
-// Send frame
-async function sendFrame(){
-
-    if(!systemRunning) return;
-
-    // ✅ smaller resolution
-    canvas.width = 320;
-    canvas.height = 240;
-
-    const ctx2 = canvas.getContext("2d");
-    ctx2.drawImage(video, 0, 0, 320, 240);
-
-    // ✅ medium quality
-    const image = canvas.toDataURL("image/jpeg", 0.7);
-
-    try{
-        const res = await fetch("/process_frame", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({ image: image })
-        });
-
-        const data = await res.json();
-
-        if(data.image){
-            document.getElementById("output").src =
-                "data:image/jpeg;base64," + data.image;
-        }
-
-        let count = data.count;
+        let count = dataRes.count;
 
         document.getElementById("count").innerText = count;
 
@@ -89,19 +63,71 @@ async function sendFrame(){
 
         updateGraph(count);
 
-    } catch(err){
-        console.log("Error:", err);
+    } catch(err) {
+        console.log("Server error:", err);
     }
 }
 
-// ✅ slower interval (smooth + safe)
-setInterval(sendFrame, 1500);
+setInterval(updateData, 2000);
 
-// Toggle
+// 🔘 Toggle
 async function toggleSystem(){
-    let res = await fetch("/toggle");
-    let data = await res.json();
-    systemRunning = data.status;
-
-    alert(systemRunning ? "Started" : "Stopped");
+    await fetch("/toggle");
 }
+
+// 🎥 CAMERA (FINAL FIX)
+const video = document.getElementById("video");
+
+async function startCamera() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false
+        });
+
+        video.srcObject = stream;
+
+        video.onloadedmetadata = () => {
+            video.play();
+        };
+
+        video.muted = true;
+        video.setAttribute("playsinline", true);
+
+    } catch (error) {
+        alert("Camera not accessible!");
+        console.error(error);
+    }
+}
+
+startCamera();
+
+// 📸 Send frame (LIGHT VERSION)
+const canvas = document.getElementById("canvas");
+
+async function sendFrame(){
+
+    if(video.readyState !== 4) return;
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0);
+
+    const image = canvas.toDataURL("image/jpeg");
+
+    try {
+        await fetch("/process_frame", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ image: image })
+        });
+    } catch(err){
+        console.log("Frame send error");
+    }
+}
+
+setInterval(sendFrame, 3000);
