@@ -1,133 +1,72 @@
-// 📊 Chart
-const ctx = document.getElementById('crowdChart');
+<!DOCTYPE html>
+<html>
 
-let labels = [];
-let data = [];
+<head>
+    <title>AI Crowd Monitoring Dashboard</title>
 
-const chart = new Chart(ctx, {
-    type: 'line',
-    data: {
-        labels: labels,
-        datasets: [{
-            label: 'People Count',
-            data: data,
-            borderColor: 'red',
-            backgroundColor: 'rgba(255,0,0,0.2)',
-            tension: 0.4
-        }]
-    },
-    options: {
-        responsive: true,
-        scales: {
-            y: { beginAtZero: true }
-        }
-    }
-});
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
-// 📈 Graph update
-function updateGraph(count){
-    let time = new Date().toLocaleTimeString();
-    labels.push(time);
-    data.push(count);
+    <!-- Chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
 
-    if(labels.length > 15){
-        labels.shift();
-        data.shift();
-    }
+<body>
 
-    chart.update();
-}
+<!-- HEADER -->
+<div class="header">
+    <h1>AI Crowd Monitoring System</h1>
+</div>
 
-// 📡 Fetch count
-async function updateData(){
-    try {
-        let response = await fetch("/count");
-        let dataRes = await response.json();
+<!-- BUTTON -->
+<div class="controls">
+    <button onclick="toggleSystem()" class="toggle-btn">
+        Start / Stop Monitoring
+    </button>
+</div>
 
-        let count = dataRes.count;
+<!-- MAIN CONTAINER -->
+<div class="container">
 
-        document.getElementById("count").innerText = count;
+    <!-- CAMERA -->
+    <div class="video-section">
+        <h2>Live Camera</h2>
 
-        if(count < 5){
-            document.getElementById("density").innerText = "LOW";
-            document.getElementById("alert").innerText = "SAFE";
-        }
-        else if(count < 10){
-            document.getElementById("density").innerText = "MEDIUM";
-            document.getElementById("alert").innerText = "WARNING";
-        }
-        else{
-            document.getElementById("density").innerText = "HIGH";
-            document.getElementById("alert").innerText = "DANGER";
-        }
+        <video id="video" autoplay playsinline class="video"></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+    </div>
 
-        updateGraph(count);
+    <!-- STATS -->
+    <div class="stats">
 
-    } catch(err) {
-        console.log("Server error:", err);
-    }
-}
+        <div class="card count">
+            <h3>People Count</h3>
+            <p id="count">0</p>
+        </div>
 
-setInterval(updateData, 2000);
+        <div class="card density">
+            <h3>Density</h3>
+            <p id="density">LOW</p>
+        </div>
 
-// 🔘 Toggle
-async function toggleSystem(){
-    await fetch("/toggle");
-}
+        <div class="card alert">
+            <h3>Alert</h3>
+            <p id="alert">SAFE</p>
+        </div>
 
-// 🎥 CAMERA (FINAL FIX)
-const video = document.getElementById("video");
+    </div>
 
-async function startCamera() {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: false
-        });
+</div>
 
-        video.srcObject = stream;
+<!-- GRAPH -->
+<div class="graph-section">
+    <h2>Crowd Trend</h2>
+    <canvas id="crowdChart"></canvas>
+</div>
 
-        video.onloadedmetadata = () => {
-            video.play();
-        };
+<!-- JS (VERY IMPORTANT THIS LINE) -->
+<script src="{{ url_for('static', filename='script.js') }}"></script>
 
-        video.muted = true;
-        video.setAttribute("playsinline", true);
+</body>
 
-    } catch (error) {
-        alert("Camera not accessible!");
-        console.error(error);
-    }
-}
-
-startCamera();
-
-// 📸 Send frame (LIGHT VERSION)
-const canvas = document.getElementById("canvas");
-
-async function sendFrame(){
-
-    if(video.readyState !== 4) return;
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(video, 0, 0);
-
-    const image = canvas.toDataURL("image/jpeg");
-
-    try {
-        await fetch("/process_frame", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ image: image })
-        });
-    } catch(err){
-        console.log("Frame send error");
-    }
-}
-
-setInterval(sendFrame, 3000);
+</html>
