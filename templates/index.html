@@ -2,13 +2,9 @@
 <html>
 
 <head>
-
 <title>AI Crowd Monitoring Dashboard</title>
-
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 </head>
 
 <body>
@@ -18,68 +14,49 @@
 </div>
 
 <div class="controls">
-
 <button onclick="toggleSystem()" class="toggle-btn">
 Start / Stop Monitoring
 </button>
-
 </div>
 
 <div class="container">
 
 <div class="video-section">
-
 <h2>Live Camera</h2>
 
-<img src="{{ url_for('video') }}" class="video">
+<img id="output" class="video"/>
+<video id="video" autoplay style="display:none;"></video>
+<canvas id="canvas" style="display:none;"></canvas>
 
 </div>
-
 
 <div class="stats">
 
 <div class="card count">
-
 <h3>People Count</h3>
-
 <p id="count">0</p>
-
 </div>
-
 
 <div class="card density">
-
 <h3>Density</h3>
-
 <p id="density">LOW</p>
-
 </div>
-
 
 <div class="card alert">
-
 <h3>Alert</h3>
-
 <p id="alert">SAFE</p>
-
 </div>
 
 </div>
 
 </div>
-
 
 <div class="graph-section">
-
 <h2>Crowd Trend</h2>
-
 <canvas id="crowdChart"></canvas>
-
 </div>
-
 
 <script src="{{ url_for('static', filename='script.js') }}"></script>
 
 </body>
-
 </html>
