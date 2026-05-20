@@ -102,17 +102,3 @@ The dashboard displays:
 - Crowd trend graph
 
 ---
-
-## Future Improvements
-
-- Heatmap visualization
-- Multi-camera monitoring
-- Mobile notifications
-- Smart city integration
-
----
-
-## Author
-
-Niharika Enugurthi  
-Information Technology Student
